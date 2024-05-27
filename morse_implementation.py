@@ -22,13 +22,15 @@ def edge_value(coord_x, coord_y, dir, eps=1e-8):
     """determines morse func value of edge with 
     direction True == Right (and false is downwards)
     is_max True => left/top vertex was maximal
+    Last thing we return implies whether the edge is a saddle (1 indicates yes);
+    This value is initialized as 1, but changed to 0 if a gradient pair with a vertex / cell is found
     """
     point = data_points[coord_x][coord_y]
     if dir:
         second_point = data_points[coord_x+1][coord_y]
     else:
         second_point = data_points[coord_x][coord_y+1]
-    return max(point, second_point) + eps*min(point, second_point), point >= second_point, 0
+    return [max(point, second_point) + eps*min(point, second_point), point >= second_point, 1]
 
 print(data_points[10][15], data_points[10][16], data_points[11][15])
 # print(edge_value(10,15,True))
@@ -45,7 +47,7 @@ for coord_x in range(1600-1):
 vertical_edges = np.empty((1600, 160-1),object)
 for coord_x in range(1600):
     for coord_y in range(160-1):
-        vertical_edges[coord_x][coord_y] = edge_value(coord_x, coord_y, 1)
+        vertical_edges[coord_x][coord_y] = edge_value(coord_x, coord_y, 0)
 
 print(horizontal_edges[10][15])
 
@@ -80,9 +82,60 @@ print(cell_values[0][0])
 print(np.min(horizontal_edges), np.min(vertical_edges), np.min(cell_values))
 
 is_minimum = np.ones((1600, 160))
+gradient_pair_vertex_edge = np.empty((1600, 160),object)
 
 def draw_vertex_edge_pair(coord_x, coord_y):
     """Determines for a vertex whether it is the maximum of an adjacent edge.
     If it is, determine for all edges of which it is a maximum, add a gradient pair to the smallest edge.
     0 => minimum (no larger edges), and 1 through 4 for clockwise pairs (starting top)
     """
+    global horizontal_edges
+    global vertical_edges
+    global is_minimum
+    gradient_so_far = 0
+    gradient_min_value = np.inf
+
+    if coord_y > 0:
+        top_edge = vertical_edges[coord_x][coord_y-1][1]
+        top_edge_value = vertical_edges[coord_x][coord_y-1][0]
+        if not top_edge:
+            gradient_so_far = 1
+            gradient_min_value = top_edge_value
+
+    if coord_x < 1600-1:
+        right_edge = vertical_edges[coord_x][coord_y][1]
+        right_edge_value = vertical_edges[coord_x][coord_y][0]
+        if right_edge and right_edge_value < gradient_min_value:
+            gradient_so_far = 2
+            gradient_min_value = right_edge_value
+
+    if coord_y < 160-1:
+        bottom_edge = vertical_edges[coord_x][coord_y][1]
+        bottom_edge_value = vertical_edges[coord_x][coord_y][0]
+        if bottom_edge and bottom_edge_value < gradient_min_value:
+            gradient_so_far = 3
+            gradient_min_value = bottom_edge_value
+
+    if coord_x > 0:
+        left_edge = vertical_edges[coord_x-1][coord_y][1]
+        left_edge_value = vertical_edges[coord_x-1][coord_y][0]
+        if not left_edge and left_edge_value < gradient_min_value:
+                gradient_so_far = 4
+                gradient_min_value = left_edge_value
+
+    if gradient_so_far > 0:
+        is_minimum[coord_x][coord_y] = 0
+        if gradient_so_far == 1:
+            vertical_edges[coord_x][coord_y-1][2] = 0
+        if gradient_so_far == 2:
+            horizontal_edges[coord_x][coord_y][2] = 0
+        if gradient_so_far == 3:
+            vertical_edges[coord_x][coord_y][2] = 0
+        if gradient_so_far == 4:
+            horizontal_edges[coord_x-1][coord_y][2] = 0
+
+    return ((coord_x, coord_y), gradient_so_far)
+
+for coord_x in range(1600-1):
+    for coord_y in range(160-1):
+        draw_vertex_edge_pair(coord_x, coord_y)

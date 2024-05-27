@@ -163,15 +163,23 @@ def draw_edge_cell_pair(array, coord_x, coord_y):
                 gradient_min_value = cell_value
                 
     if gradient_so_far > 0:
-        is_maximum[coord_x][coord_y] = 0
-        if gradient_so_far in [1, 2]:
+        if gradient_so_far == 1:
             horizontal_edges[coord_x][coord_y][2] = 0
-        elif gradient_so_far in [3, 4]:
+            is_maximum[coord_x][coord_y-1] = 0
+        elif gradient_so_far == 2:
+            horizontal_edges[coord_x][coord_y][2] = 0
+            is_maximum[coord_x][coord_y] = 0
+        elif gradient_so_far == 3:
             vertical_edges[coord_x][coord_y][2] = 0
+            is_maximum[coord_x-1][coord_y] = 0
+        elif gradient_so_far == 4:
+            vertical_edges[coord_x][coord_y][2] = 0
+            is_maximum[coord_x][coord_y] = 0
 
-# horizontal_edges heeft shape (1600-1, 160), vertical_edges heeft shape (1600, 160-1). Dit dus nog fixen dat hij m volledig doet.
-for coord_x in range(1600-1):
-    for coord_y in range(160-1):
-        draw_edge_cell_pair(horizontal_edges, coord_x, coord_y)
-        draw_edge_cell_pair(vertical_edges, coord_x, coord_y)
-print(np.count_nonzero(is_maximum)) # Geeft 29553
+for coord_x in range(1600):
+    for coord_y in range(160):
+        if coord_x != 1599:
+            draw_edge_cell_pair(horizontal_edges, coord_x, coord_y)
+        if coord_y != 159:
+            draw_edge_cell_pair(vertical_edges, coord_x, coord_y)
+print(np.count_nonzero(is_maximum)) # Geeft 11148

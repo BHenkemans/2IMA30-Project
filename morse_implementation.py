@@ -98,15 +98,15 @@ def draw_vertex_edge_pair(coord_x, coord_y):
 
     # Define a list of conditions and corresponding actions
     conditions = [
-        (coord_y > 0, vertical_edges[coord_x][coord_y-1], 1, False),
-        (coord_x < 1600-1, horizontal_edges[coord_x][coord_y], 2, True),
-        (coord_y < 160-1, vertical_edges[coord_x][coord_y], 3, True),
-        (coord_x > 0, horizontal_edges[coord_x-1][coord_y], 4, False)
+        (coord_y > 0, (coord_x, coord_y-1), vertical_edges, 1, False),
+        (coord_x < 1600-1, (coord_x, coord_y), horizontal_edges, 2, True),
+        (coord_y < 160-1, (coord_x, coord_y), vertical_edges, 3, True),
+        (coord_x > 0, (coord_x-1, coord_y), horizontal_edges, 4, False)
     ]
 
-    for condition, edge, gradient, edge_status in conditions:
+    for condition, coords, edge_array, gradient, edge_status in conditions:
         if condition:
-            edge_value, edge_status_actual = edge
+            edge_value, edge_status_actual = edge_array[coords][0], edge_array[coords][1]
             if edge_status == edge_status_actual and edge_value < gradient_min_value:
                 gradient_so_far = gradient
                 gradient_min_value = edge_value
@@ -127,3 +127,4 @@ def draw_vertex_edge_pair(coord_x, coord_y):
 for coord_x in range(1600):
     for coord_y in range(160):
         draw_vertex_edge_pair(coord_x, coord_y)
+print(np.count_nonzero(is_minimum))

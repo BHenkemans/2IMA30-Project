@@ -103,8 +103,8 @@ def draw_vertex_edge_pair(coord_x, coord_y):
             gradient_min_value = top_edge_value
 
     if coord_x < 1600-1:
-        right_edge = vertical_edges[coord_x][coord_y][1]
-        right_edge_value = vertical_edges[coord_x][coord_y][0]
+        right_edge = horizontal_edges[coord_x][coord_y][1]
+        right_edge_value = horizontal_edges[coord_x][coord_y][0]
         if right_edge and right_edge_value < gradient_min_value:
             gradient_so_far = 2
             gradient_min_value = right_edge_value
@@ -117,8 +117,8 @@ def draw_vertex_edge_pair(coord_x, coord_y):
             gradient_min_value = bottom_edge_value
 
     if coord_x > 0:
-        left_edge = vertical_edges[coord_x-1][coord_y][1]
-        left_edge_value = vertical_edges[coord_x-1][coord_y][0]
+        left_edge = horizontal_edges[coord_x-1][coord_y][1]
+        left_edge_value = horizontal_edges[coord_x-1][coord_y][0]
         if not left_edge and left_edge_value < gradient_min_value:
                 gradient_so_far = 4
                 gradient_min_value = left_edge_value
@@ -136,6 +136,6 @@ def draw_vertex_edge_pair(coord_x, coord_y):
 
     return ((coord_x, coord_y), gradient_so_far)
 
-for coord_x in range(1600-1):
-    for coord_y in range(160-1):
+for coord_x in range(1600):
+    for coord_y in range(160):
         draw_vertex_edge_pair(coord_x, coord_y)

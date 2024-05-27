@@ -127,4 +127,59 @@ def draw_vertex_edge_pair(coord_x, coord_y):
 for coord_x in range(1600):
     for coord_y in range(160):
         draw_vertex_edge_pair(coord_x, coord_y)
-print(np.count_nonzero(is_minimum))
+print(np.count_nonzero(is_minimum)) # Geeft 5577
+
+
+# We now want to determine the gradient pairs for the cells
+is_maximum = np.ones((1600-1, 160-1))
+gradient_pair_edge_cell = np.empty((1600, 160),object)
+
+def draw_edge_cell_pair(array, coord_x, coord_y):
+    """ Determines for an edge whether it is the maximum of an adjacent cell.
+    If it is, determine for all cells of which it is a maximum, add a gradient pair to the smallest cell.
+    0 => possible saddle (not a maximum of adjacent cell), and 1 through 2 for clockwise pairs (starting top/left)
+    """
+    
+    # If we already know the edge is not a saddle by vertex-edge gradient pairs, we can skip this edge
+    if (array[coord_x][coord_y][2] == 0):
+        return
+    
+    gradient_so_far = 0
+    gradient_min_value = np.inf
+    
+    if array is horizontal_edges:
+        if coord_y > 0:
+            cell_value, cell_status = cell_values[coord_x][coord_y-1]
+            if cell_status == "10" and cell_value < gradient_min_value:
+                gradient_so_far = 1
+                gradient_min_value = cell_value
+        if coord_y < 160-1:
+            cell_value, cell_status = cell_values[coord_x][coord_y]
+            if cell_status == "11" and cell_value < gradient_min_value:
+                gradient_so_far = 2
+                gradient_min_value = cell_value
+        
+    elif array is vertical_edges:
+        if coord_x > 0:
+            cell_value, cell_status = cell_values[coord_x-1][coord_y]
+            if cell_status == "00" and cell_value < gradient_min_value:
+                gradient_so_far = 3
+                gradient_min_value = cell_value
+        if coord_x < 1600-1:
+            cell_value, cell_status = cell_values[coord_x][coord_y]
+            if cell_status == "01" and cell_value < gradient_min_value:
+                gradient_so_far = 4
+                gradient_min_value = cell_value
+                
+    if gradient_so_far > 0:
+        is_maximum[coord_x][coord_y] = 0
+        if gradient_so_far == 1 or gradient_so_far == 2:
+            horizontal_edges[coord_x][coord_y][2] = 0
+        elif gradient_so_far == 3 or gradient_so_far == 4:
+            vertical_edges[coord_x][coord_y][2] = 0
+
+for coord_x in range(1600-1):
+    for coord_y in range(160-1):
+        draw_edge_cell_pair(horizontal_edges, coord_x, coord_y)
+        draw_edge_cell_pair(vertical_edges, coord_x, coord_y)
+print(np.count_nonzero(is_maximum)) # Geeft 29553

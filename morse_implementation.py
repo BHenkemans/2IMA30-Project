@@ -2,7 +2,7 @@ import tifffile
 import matplotlib.pyplot as plt
 import numpy as np
 
-impMillie = tifffile.imread('detrended.tiff')
+impMillie = tifffile.imread('Datasets\detrended.tiff')
 
 imp = impMillie
 
@@ -86,4 +86,3 @@ def draw_vertex_edge_pair(coord_x, coord_y):
     If it is, determine for all edges of which it is a maximum, add a gradient pair to the smallest edge.
     0 => minimum (no larger edges), and 1 through 4 for clockwise pairs (starting top)
     """
-    

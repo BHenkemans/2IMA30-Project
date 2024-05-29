@@ -18,6 +18,7 @@ z = data_points.copy()
 # z = np.array([[x**2 + y**2 for x in range(20)] for y in range(20)])
 x, y = np.meshgrid(range(z.shape[0]), range(z.shape[1]))
 
+# STEP 1: Morse function values assignen
 def edge_value(coord_x, coord_y, dir, eps=1e-8):
     """determines morse func value of edge with 
     direction True == Right (and false is downwards)
@@ -81,6 +82,8 @@ for coord_x in range(1600-1):
 print(cell_values[0][0])
 print(np.min(horizontal_edges), np.min(vertical_edges), np.min(cell_values))
 
+# STEP 2: gradient pairs assignen
+
 is_minimum = np.ones((1600, 160))
 gradient_pair_vertex_edge = np.empty((1600, 160),object)
 
@@ -130,6 +133,7 @@ for coord_x in range(1600):
     for coord_y in range(160):
         draw_vertex_edge_pair(coord_x, coord_y)
 print(np.count_nonzero(is_minimum)) # Geeft 5577
+
 
 
 # We now want to determine the gradient pairs for the cells
@@ -193,3 +197,13 @@ for coord_x in range(1600):
             draw_edge_cell_pair(vertical_edges, coord_x, coord_y)
 print(np.count_nonzero(gradient_pair_edge_cell==0)) #geeft 11148
 #print(np.count_nonzero(is_maximum)) # Geeft 11148
+
+# STEP 3 defining maxima, saddles, minima
+# minimum: is_minimum[x][y] == 1
+# saddle:   als horziontal_edges[x][y][2] == 1
+#           als vertical_edges[x][y][2] == 1 
+# maxima: als is_maximum[x][y] == 1
+
+# STEP 4: Make segments (between minima and saddles)
+# a segment is a path from a saddle to a minimum
+    # the path consists of a sequence of (x,y)-coordinates

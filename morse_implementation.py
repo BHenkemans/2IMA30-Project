@@ -208,7 +208,8 @@ for coord_x in range(1600):
 
 print(np.count_nonzero(gradient_pair_edge_cell==0)) #geeft 11148
 #print(np.count_nonzero(is_maximum)) # Geeft 11148
-<<<<<<< Updated upstream
+print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
+
 
 # STEP 3 defining maxima, saddles, minima
 # minimum: is_minimum[x][y] == 1
@@ -219,6 +220,48 @@ print(np.count_nonzero(gradient_pair_edge_cell==0)) #geeft 11148
 # STEP 4: Make segments (between minima and saddles)
 # a segment is a path from a saddle to a minimum
     # the path consists of a sequence of (x,y)-coordinates
-=======
-print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
->>>>>>> Stashed changes
+
+def make_paths_from_saddle(coord_x, coord_y, dir):
+    # path = np.empty((1,2), [])
+    first_vertex = [coord_x, coord_y]
+    if dir: 
+        second_vertex = [coord_x+1, coord_y]
+    else:
+        second_vertex = [coord_x, coord_y+1]
+    path = [[], []]
+    for index, vertex in enumerate([first_vertex, second_vertex]):
+        temp = [(vertex[0], vertex[1])]
+        # path[index].append(vertex)
+        # temp.append(vertex)
+        # temp = np.append(temp, ([vertex[0], vertex[1]]))
+        vertex_value = gradient_pair_vertex_edge[vertex[0]][vertex[1]]
+
+        while vertex_value > 0:
+            new_vertex = vertex.copy()
+            if vertex_value == 1:
+                new_vertex[1] -= 1
+            elif vertex_value == 2:
+                new_vertex[0] += 1
+            elif vertex_value == 3:
+                new_vertex[1] += 1
+            else: 
+                new_vertex[0] -= 1
+            # temp.append(new_vertex)
+            temp.append((new_vertex[0], new_vertex[1]))
+            vertex = new_vertex.copy()
+            vertex_value = gradient_pair_vertex_edge[vertex[0]][vertex[1]]
+        path[index] = temp
+
+    return (path[0], path[1])
+
+def make_segment_around_saddle(coord_x, coord_y, dir):
+    first_path, second_path = make_paths_from_saddle(coord_x, coord_y, dir)
+    return list(reversed(first_path)) + second_path
+
+# Known saddle check:
+print(make_paths_from_saddle(582, 44, 1))
+print(make_paths_from_saddle(1433, 47, 1))
+print(make_paths_from_saddle(1591, 30, 1))
+
+print(make_segment_around_saddle(1433, 47, 1))
+

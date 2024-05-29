@@ -264,4 +264,35 @@ print(make_paths_from_saddle(1433, 47, 1))
 print(make_paths_from_saddle(1591, 30, 1))
 
 print(make_segment_around_saddle(1433, 47, 1))
+print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
+
+import networkx as nx
+
+G = nx.grid_2d_graph(50, 50)
+
+color_map = []
+for node in G:
+    print(node)
+    if is_minimum[node[0]][node[1]] == 1:
+        color_map.append('blue')
+    else:
+        color_map.append('grey')
+
+edge_color_map=[]
+for edge in G.edges():
+    if edge[0][0] == edge[1][0]:
+        edge_array = horizontal_edges
+    else:
+        edge_array = vertical_edges
+    if edge_array[edge[0][0]][edge[0][1]][2] == 1:
+        edge_color_map.append('red')
+    else:
+        edge_color_map.append('grey')
+
+pos = {(x, y): (y, -x) for x, y in G.nodes()}
+
+nx.draw(G, pos=pos, node_color=color_map, edge_color = edge_color_map, with_labels=False, node_size=10)
+plt.axis('equal')
+plt.show()
+
 

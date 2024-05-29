@@ -184,3 +184,32 @@ for coord_x in range(1600):
         if coord_y != 159:
             draw_edge_cell_pair(vertical_edges, coord_x, coord_y)
 print(np.count_nonzero(is_maximum)) # Geeft 11148
+
+import networkx as nx
+
+G = nx.grid_2d_graph(50, 50)
+
+color_map = []
+for node in G:
+    print(node)
+    if is_minimum[node[0]][node[1]] == 1:
+        color_map.append('blue')
+    else:
+        color_map.append('grey')
+
+edge_color_map=[]
+for edge in G.edges():
+    if edge[0][0] == edge[1][0]:
+        edge_array = horizontal_edges
+    else:
+        edge_array = vertical_edges
+    if edge_array[edge[0][0]][edge[0][1]][2] == 1:
+        edge_color_map.append('red')
+    else:
+        edge_color_map.append('grey')
+
+pos = {(x, y): (y, -x) for x, y in G.nodes()}
+
+nx.draw(G, pos=pos, node_color=color_map, edge_color = edge_color_map, with_labels=False, node_size=10)
+plt.axis('equal')
+plt.show()

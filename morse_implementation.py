@@ -209,6 +209,17 @@ for coord_x in range(1600):
 print(np.count_nonzero(gradient_pair_edge_cell==0)) #geeft 11148
 #print(np.count_nonzero(is_maximum)) # Geeft 11148
 
+# STEP 3 defining maxima, saddles, minima
+# minimum: is_minimum[x][y] == 1
+# saddle:   als horziontal_edges[x][y][2] == 1
+#           als vertical_edges[x][y][2] == 1 
+# maxima: als is_maximum[x][y] == 1
+
+# STEP 4: Make segments (between minima and saddles)
+# a segment is a path from a saddle to a minimum
+    # the path consists of a sequence of (x,y)-coordinates
+print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
+
 import networkx as nx
 
 G = nx.grid_2d_graph(50, 50)
@@ -237,17 +248,5 @@ pos = {(x, y): (y, -x) for x, y in G.nodes()}
 nx.draw(G, pos=pos, node_color=color_map, edge_color = edge_color_map, with_labels=False, node_size=10)
 plt.axis('equal')
 plt.show()
-<<<<<<< Updated upstream
 
-# STEP 3 defining maxima, saddles, minima
-# minimum: is_minimum[x][y] == 1
-# saddle:   als horziontal_edges[x][y][2] == 1
-#           als vertical_edges[x][y][2] == 1 
-# maxima: als is_maximum[x][y] == 1
 
-# STEP 4: Make segments (between minima and saddles)
-# a segment is a path from a saddle to a minimum
-    # the path consists of a sequence of (x,y)-coordinates
-=======
-print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
->>>>>>> Stashed changes

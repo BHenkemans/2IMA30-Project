@@ -136,7 +136,8 @@ gradient_pair_edge_cell = np.empty((1600, 160),object)
 
 def draw_edge_cell_pair(array, coord_x, coord_y):
     """ Determines for an edge whether it is the maximum of an adjacent cell.
-    If it is, determine for all cells of which it is a maximum, add a gradient pair to the smallest cell.
+    If it is, determine for all cells of which it is a maximum, the smallest cell 
+        and add a gradient pair to this edge and the smallest cell.
     0 => possible saddle (not a maximum of adjacent cell), and 1 through 2 for clockwise pairs (starting top/left)
     """
     

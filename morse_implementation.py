@@ -122,6 +122,8 @@ def draw_vertex_edge_pair(coord_x, coord_y):
         elif gradient_so_far == 4:
             horizontal_edges[coord_x-1][coord_y][2] = 0
 
+    gradient_pair_vertex_edge[coord_x][coord_y] = gradient_so_far
+
     return ((coord_x, coord_y), gradient_so_far)
 
 for coord_x in range(1600):
@@ -132,7 +134,9 @@ print(np.count_nonzero(is_minimum)) # Geeft 5577
 
 # We now want to determine the gradient pairs for the cells
 is_maximum = np.ones((1600-1, 160-1))
-gradient_pair_edge_cell = np.empty((1600, 160),object)
+# this is seen from the cell with coord_x coord_y
+# note that this means the arrows need to be reversed in visualization
+gradient_pair_edge_cell = np.zeros((1600-1, 160-1),object)
 
 def draw_edge_cell_pair(array, coord_x, coord_y):
     """ Determines for an edge whether it is the maximum of an adjacent cell.
@@ -167,15 +171,19 @@ def draw_edge_cell_pair(array, coord_x, coord_y):
         if gradient_so_far == 1:
             horizontal_edges[coord_x][coord_y][2] = 0
             is_maximum[coord_x][coord_y-1] = 0
+            gradient_pair_edge_cell[coord_x][coord_y-1] = gradient_so_far
         elif gradient_so_far == 2:
             horizontal_edges[coord_x][coord_y][2] = 0
             is_maximum[coord_x][coord_y] = 0
+            gradient_pair_edge_cell[coord_x][coord_y] = gradient_so_far
         elif gradient_so_far == 3:
             vertical_edges[coord_x][coord_y][2] = 0
             is_maximum[coord_x-1][coord_y] = 0
+            gradient_pair_edge_cell[coord_x-1][coord_y] = gradient_so_far
         elif gradient_so_far == 4:
             vertical_edges[coord_x][coord_y][2] = 0
             is_maximum[coord_x][coord_y] = 0
+            gradient_pair_edge_cell[coord_x][coord_y] = gradient_so_far
 
 for coord_x in range(1600):
     for coord_y in range(160):
@@ -183,4 +191,5 @@ for coord_x in range(1600):
             draw_edge_cell_pair(horizontal_edges, coord_x, coord_y)
         if coord_y != 159:
             draw_edge_cell_pair(vertical_edges, coord_x, coord_y)
-print(np.count_nonzero(is_maximum)) # Geeft 11148
+print(np.count_nonzero(gradient_pair_edge_cell==0)) #geeft 11148
+#print(np.count_nonzero(is_maximum)) # Geeft 11148

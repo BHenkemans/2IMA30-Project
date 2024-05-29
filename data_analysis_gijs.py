@@ -6,7 +6,7 @@ impMillie = tifffile.imread('detrended.tiff')
 
 imp = impMillie / 1e6 - 20
 
-time1 = imp[1].copy()
+time1 = imp[0].copy()
 time600 = imp[660].copy()
 
 print(time1.shape)
@@ -60,11 +60,11 @@ def plot_heatmap_frame(data, figsize=(15,10)):
 im = plot_heatmap_frame(imp[0])
 
 # Append the following frames and save as GIF
-with io.BytesIO() as myGif: 
-    im.save(myGif, format='GIF', save_all=True, append_images=[plot_heatmap_frame(imp[i]) for i in range(600, 650)], optimize=False, duration=8, loop=0)
-    # Reset pointer position to start of GIF data
-    myGif.seek(0)
+# with io.BytesIO() as myGif: 
+#     im.save(myGif, format='GIF', save_all=True, append_images=[plot_heatmap_frame(imp[i]) for i in range(1, len(imp))], optimize=False, duration=1, loop=0)
+#     # Reset pointer position to start of GIF data
+#     myGif.seek(0)
     
-    # Save the GIF to a file
-    with open("training_weights_new.gif", "wb") as f:
-        f.write(myGif.read())
+#     # Save the GIF to a file
+#     with open("training_weights_full_fast_af.gif", "wb") as f:
+#         f.write(myGif.read())

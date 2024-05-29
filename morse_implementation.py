@@ -18,6 +18,7 @@ z = data_points.copy()
 # z = np.array([[x**2 + y**2 for x in range(20)] for y in range(20)])
 x, y = np.meshgrid(range(z.shape[0]), range(z.shape[1]))
 
+# STEP 1: Morse function values assignen
 def edge_value(coord_x, coord_y, dir, eps=1e-8):
     """determines morse func value of edge with 
     direction True == Right (and false is downwards)
@@ -81,7 +82,11 @@ for coord_x in range(1600-1):
 print(cell_values[0][0])
 print(np.min(horizontal_edges), np.min(vertical_edges), np.min(cell_values))
 
+# STEP 2: gradient pairs assignen
+
 is_minimum = np.ones((1600, 160))
+horizontal_saddles = np.ones((1600-1, 160))
+vertical_saddles = np.ones((1600, 160-1))
 gradient_pair_vertex_edge = np.empty((1600, 160),object)
 
 def draw_vertex_edge_pair(coord_x, coord_y):
@@ -115,12 +120,18 @@ def draw_vertex_edge_pair(coord_x, coord_y):
         is_minimum[coord_x][coord_y] = 0
         if gradient_so_far == 1:
             vertical_edges[coord_x][coord_y-1][2] = 0
+            vertical_saddles[coord_x][coord_y-1] = 0
         elif gradient_so_far == 2:
             horizontal_edges[coord_x][coord_y][2] = 0
+            horizontal_saddles[coord_x][coord_y] = 0
         elif gradient_so_far == 3:
             vertical_edges[coord_x][coord_y][2] = 0
+            vertical_saddles[coord_x][coord_y] = 0
         elif gradient_so_far == 4:
             horizontal_edges[coord_x-1][coord_y][2] = 0
+            horizontal_saddles[coord_x-1][coord_y] = 0
+
+    gradient_pair_vertex_edge[coord_x][coord_y] = gradient_so_far
 
     return ((coord_x, coord_y), gradient_so_far)
 
@@ -130,9 +141,12 @@ for coord_x in range(1600):
 print(np.count_nonzero(is_minimum)) # Geeft 5577
 
 
+
 # We now want to determine the gradient pairs for the cells
 is_maximum = np.ones((1600-1, 160-1))
-gradient_pair_edge_cell = np.empty((1600, 160),object)
+# this is seen from the cell with coord_x coord_y
+# note that this means the arrows need to be reversed in visualization
+gradient_pair_edge_cell = np.zeros((1600-1, 160-1),object)
 
 def draw_edge_cell_pair(array, coord_x, coord_y):
     """ Determines for an edge whether it is the maximum of an adjacent cell.
@@ -166,16 +180,24 @@ def draw_edge_cell_pair(array, coord_x, coord_y):
     if gradient_so_far > 0:
         if gradient_so_far == 1:
             horizontal_edges[coord_x][coord_y][2] = 0
+            horizontal_saddles[coord_x][coord_y] = 0
             is_maximum[coord_x][coord_y-1] = 0
+            gradient_pair_edge_cell[coord_x][coord_y-1] = gradient_so_far
         elif gradient_so_far == 2:
             horizontal_edges[coord_x][coord_y][2] = 0
+            horizontal_saddles[coord_x][coord_y] = 0
             is_maximum[coord_x][coord_y] = 0
+            gradient_pair_edge_cell[coord_x][coord_y] = gradient_so_far
         elif gradient_so_far == 3:
             vertical_edges[coord_x][coord_y][2] = 0
+            vertical_saddles[coord_x][coord_y] = 0
             is_maximum[coord_x-1][coord_y] = 0
+            gradient_pair_edge_cell[coord_x-1][coord_y] = gradient_so_far
         elif gradient_so_far == 4:
             vertical_edges[coord_x][coord_y][2] = 0
+            vertical_saddles[coord_x][coord_y] = 0
             is_maximum[coord_x][coord_y] = 0
+            gradient_pair_edge_cell[coord_x][coord_y] = gradient_so_far
 
 for coord_x in range(1600):
     for coord_y in range(160):
@@ -183,7 +205,9 @@ for coord_x in range(1600):
             draw_edge_cell_pair(horizontal_edges, coord_x, coord_y)
         if coord_y != 159:
             draw_edge_cell_pair(vertical_edges, coord_x, coord_y)
-print(np.count_nonzero(is_maximum)) # Geeft 11148
+
+print(np.count_nonzero(gradient_pair_edge_cell==0)) #geeft 11148
+#print(np.count_nonzero(is_maximum)) # Geeft 11148
 
 import networkx as nx
 
@@ -213,3 +237,17 @@ pos = {(x, y): (y, -x) for x, y in G.nodes()}
 nx.draw(G, pos=pos, node_color=color_map, edge_color = edge_color_map, with_labels=False, node_size=10)
 plt.axis('equal')
 plt.show()
+<<<<<<< Updated upstream
+
+# STEP 3 defining maxima, saddles, minima
+# minimum: is_minimum[x][y] == 1
+# saddle:   als horziontal_edges[x][y][2] == 1
+#           als vertical_edges[x][y][2] == 1 
+# maxima: als is_maximum[x][y] == 1
+
+# STEP 4: Make segments (between minima and saddles)
+# a segment is a path from a saddle to a minimum
+    # the path consists of a sequence of (x,y)-coordinates
+=======
+print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
+>>>>>>> Stashed changes

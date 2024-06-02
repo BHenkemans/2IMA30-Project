@@ -269,61 +269,69 @@ print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
 #print(is_minimum[:20, :20])
 
 # We now plot the resulting gradient vector field
-width, height = 50, 50
+width, height = 20, 20
 
 # Since pyplot draws from bottom to top, we first draw the cells for maxima
 for x in range(width-1):
     for y in range(height-1):
         if is_maximum[x][y] == 1:
-            plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='red', zorder=1)
+            plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='red', zorder=0)
 
 # We then draw the edges
 for x in range(width):
     for y in range(height):
         if x < width - 1:
             if horizontal_edges[x][y][2] == 1:
-                plt.plot([x, x+1], [y, y], 'g')
+                plt.plot([x, x+1], [y, y], 'g', zorder=3)
+                path = make_segment_around_saddle(x, y, 1)
+                x_values, y_values = zip(*path)
+                plt.plot(x_values, y_values, 'black', zorder=2)
             else:
-                plt.plot([x, x+1], [y, y], 'grey')
+                plt.plot([x, x+1], [y, y], 'grey', zorder=1)
         if y < height - 1:
             if vertical_edges[x][y][2] == 1:
-                plt.plot([x, x], [y, y+1], 'g')
+                plt.plot([x, x], [y, y+1], 'g', zorder=3)
+                path = make_segment_around_saddle(x, y, 0)
+                x_values, y_values = zip(*path)
+                plt.plot(x_values, y_values, 'black', zorder=2)
             else:
-                plt.plot([x, x], [y, y+1], 'grey')
+                plt.plot([x, x], [y, y+1], 'grey', zorder = 1)
 
 # We then draw the nodes
 for x in range(width):
     for y in range(height):
         if is_minimum[x][y] == 1:
-            plt.plot(x, y, marker = 'o', color='blue', zorder=2)
+            plt.plot(x, y, marker = 'o', color='blue', zorder=4)
+            #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
         else:
-            plt.plot(x, y, marker = 'o', color='grey', zorder=2)
+            plt.plot(x, y, marker = 'o', color='grey', zorder=4)
+            #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
 
 # We then draw the gradient vertex-edge pairs
 for x in range(width):
     for y in range(height):
         if gradient_pair_vertex_edge[x][y] != 0:
             if gradient_pair_vertex_edge[x][y] == 1:
-                plt.arrow(x, y, 0, -0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=3)
+                plt.arrow(x, y, 0, -0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
             elif gradient_pair_vertex_edge[x][y] == 2:
-                plt.arrow(x, y, 0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=3)
+                plt.arrow(x, y, 0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
             elif gradient_pair_vertex_edge[x][y] == 3:
-                plt.arrow(x, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=3)
+                plt.arrow(x, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
             elif gradient_pair_vertex_edge[x][y] == 4:
-                plt.arrow(x, y, -0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=3)
+                plt.arrow(x, y, -0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
 
 # We then draw the gradient edge-cell pairs, which uses a little bit of a weird system to determine the direction (see the function)
 for x in range(width-1):
     for y in range(height-1):
         if gradient_pair_edge_cell[x][y] != 0:
             if gradient_pair_edge_cell[x][y] == 1:
-                plt.arrow(x + 0.5, y + 1, 0, -0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=3)
+                plt.arrow(x + 0.5, y + 1, 0, -0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
             elif gradient_pair_edge_cell[x][y] == 2:
-                plt.arrow(x + 0.5, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=3)
+                plt.arrow(x + 0.5, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
             elif gradient_pair_edge_cell[x][y] == 3:
-                plt.arrow(x + 1, y + 0.5, -0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=3)
+                plt.arrow(x + 1, y + 0.5, -0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
             elif gradient_pair_edge_cell[x][y] == 4:
-                plt.arrow(x, y + 0.5, 0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=3)
+                plt.arrow(x, y + 0.5, 0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
 
 #plt.imshow(z.T, cmap='terrain')
 

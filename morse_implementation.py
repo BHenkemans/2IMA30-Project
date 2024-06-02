@@ -266,86 +266,71 @@ print(make_paths_from_saddle(1591, 30, 1))
 print(make_segment_around_saddle(1433, 47, 1))
 print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
 
-import networkx as nx
-from matplotlib import colors
+#print(is_minimum[:20, :20])
 
-width = 20
-height = 20
-G = nx.grid_2d_graph(width, height)
-G_arrows = nx.DiGraph()
+# We now plot the resulting gradient vector field
+width, height = 50, 50
 
-color_map = []
-pos = {(x, y): (y, x) for x, y in G.nodes()}
-for node in G:
-    if is_minimum[node[0]][node[1]] == 1:
-        color_map.append('blue')
-    else:
-        color_map.append('grey')
-
-edge_color_map=[]
-for edge in G.edges():
-    if edge[0][0] == edge[1][0]:
-        edge_array = horizontal_edges
-    else:
-        edge_array = vertical_edges
-
-    if edge_array[edge[0][0]][edge[0][1]][2] == 1:
-        edge_color_map.append('green')
-    else:
-        edge_color_map.append('grey')
-
-# arrows = []
-for node in G.nodes():
-    x, y = node
-
-    if gradient_pair_vertex_edge[x][y] != 0:
-        if gradient_pair_vertex_edge[x][y] == 1:
-            pos[(x, y-0.4)] = (y, x-0.4)
-            G_arrows.add_edge((x, y), (x, y-0.4))
-        elif gradient_pair_vertex_edge[x][y] == 2:
-            pos[(x+0.4, y)] = (y+0.4, x)
-            G_arrows.add_edge((x, y), (x+0.4, y))
-        elif gradient_pair_vertex_edge[x][y] == 3:
-            pos[(x, y+0.4)] = (y, x+0.4)
-            G_arrows.add_edge((x, y), (x, y+0.4))
-        elif gradient_pair_vertex_edge[x][y] == 4:
-            pos[(x-0.4, y)] = (y-0.4, x)
-            G_arrows.add_edge((x, y), (x-0.4, y))
-
-
-# Create a 2D grid with the same dimensions as your graph
-cells = np.zeros((width-1, height-1))
-
-# Fill in the grid cells according to your needs
-# For example, if you want to color the cell at (x, y) with the color corresponding to gradient_pair_vertex_edge[x][y]:
+# Since pyplot draws from bottom to top, we first draw the cells for maxima
 for x in range(width-1):
     for y in range(height-1):
-        cells[x][y] = is_maximum[x][y]
+        if is_maximum[x][y] == 1:
+            plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='red', zorder=1)
 
-#cells = np.flipud(cells.T)
+# We then draw the edges
+for x in range(width):
+    for y in range(height):
+        if x < width - 1:
+            if horizontal_edges[x][y][2] == 1:
+                plt.plot([x, x+1], [y, y], 'g')
+            else:
+                plt.plot([x, x+1], [y, y], 'grey')
+        if y < height - 1:
+            if vertical_edges[x][y][2] == 1:
+                plt.plot([x, x], [y, y+1], 'g')
+            else:
+                plt.plot([x, x], [y, y+1], 'grey')
 
-#ax = plt.gca()
-#ax.yaxis.set_ticks_position('left')
-#np.moveaxis(cells, 0, -1)
+# We then draw the nodes
+for x in range(width):
+    for y in range(height):
+        if is_minimum[x][y] == 1:
+            plt.plot(x, y, marker = 'o', color='blue', zorder=2)
+        else:
+            plt.plot(x, y, marker = 'o', color='grey', zorder=2)
 
-# Display the grid
+# We then draw the gradient vertex-edge pairs
+for x in range(width):
+    for y in range(height):
+        if gradient_pair_vertex_edge[x][y] != 0:
+            if gradient_pair_vertex_edge[x][y] == 1:
+                plt.arrow(x, y, 0, -0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=3)
+            elif gradient_pair_vertex_edge[x][y] == 2:
+                plt.arrow(x, y, 0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=3)
+            elif gradient_pair_vertex_edge[x][y] == 3:
+                plt.arrow(x, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=3)
+            elif gradient_pair_vertex_edge[x][y] == 4:
+                plt.arrow(x, y, -0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=3)
 
-cmap = colors.ListedColormap(['lightgrey', 'red'])
+# We then draw the gradient edge-cell pairs, which uses a little bit of a weird system to determine the direction (see the function)
+for x in range(width-1):
+    for y in range(height-1):
+        if gradient_pair_edge_cell[x][y] != 0:
+            if gradient_pair_edge_cell[x][y] == 1:
+                plt.arrow(x + 0.5, y + 1, 0, -0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=3)
+            elif gradient_pair_edge_cell[x][y] == 2:
+                plt.arrow(x + 0.5, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=3)
+            elif gradient_pair_edge_cell[x][y] == 3:
+                plt.arrow(x + 1, y + 0.5, -0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=3)
+            elif gradient_pair_edge_cell[x][y] == 4:
+                plt.arrow(x, y + 0.5, 0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=3)
 
-labels = {}
-for node in G.nodes():
-    x, y = node
-    labels[node] = (gradient_pair_vertex_edge[x][y], data_points[x][y])
-#np.moveaxis(cells, -1, 0)
-plt.imshow(cells, cmap=cmap, origin='upper', extent=[0, width-1, 0, height-1])
+#plt.imshow(z.T, cmap='terrain')
+
+# Since our data has the origin in the top left, we invert the y-axis
 plt.gca().invert_yaxis()
-
-nx.draw_networkx_edges(G_arrows, pos=pos, edge_color='yellow', width=3, arrows=True)
-nx.draw(G, pos=pos, node_color=color_map, edge_color = edge_color_map, with_labels=False, node_size=10)
-#nx.draw_networkx_nodes(G, pos=pos, node_color=color_map, node_size=10, with_labels=True)
-#nx.draw_networkx_edges(G, pos=pos, edge_color = edge_color_map)
-
-nx.draw_networkx_labels(G, pos, labels, font_size=8)
-
+# We set the background color to lightgrey for better visibility
+plt.gca().set_facecolor('lightgrey')
+# We set the aspect ratio to be equal
 plt.axis('equal')
 plt.show()

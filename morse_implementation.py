@@ -270,16 +270,21 @@ print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
 
 # We now plot the resulting gradient vector field
 width, height = 20, 20
+x_offset, y_offset = 1450, 30
 
 # Since pyplot draws from bottom to top, we first draw the cells for maxima
-for x in range(width-1):
-    for y in range(height-1):
+for x in range(x_offset, x_offset + width-1):
+    for y in range(y_offset, y_offset + height-1):
+        if cell_values[x][y][0] < IBL:
+            plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='lightblue', zorder=0)
+        else:
+            plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='bisque', zorder=0)
         if is_maximum[x][y] == 1:
             plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='red', zorder=0)
 
 # We then draw the edges
-for x in range(width):
-    for y in range(height):
+for x in range(x_offset, x_offset + width):
+    for y in range(y_offset, y_offset + height):
         if x < width - 1:
             if horizontal_edges[x][y][2] == 1:
                 plt.plot([x, x+1], [y, y], 'g', zorder=3)
@@ -298,8 +303,8 @@ for x in range(width):
                 plt.plot([x, x], [y, y+1], 'grey', zorder = 1)
 
 # We then draw the nodes
-for x in range(width):
-    for y in range(height):
+for x in range(x_offset, x_offset + width):
+    for y in range(y_offset, y_offset + height):
         if is_minimum[x][y] == 1:
             plt.plot(x, y, marker = 'o', color='blue', zorder=4)
             #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
@@ -308,8 +313,8 @@ for x in range(width):
             #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
 
 # We then draw the gradient vertex-edge pairs
-for x in range(width):
-    for y in range(height):
+for x in range(x_offset, x_offset + width):
+    for y in range(y_offset, y_offset + height):
         if gradient_pair_vertex_edge[x][y] != 0:
             if gradient_pair_vertex_edge[x][y] == 1:
                 plt.arrow(x, y, 0, -0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
@@ -321,8 +326,8 @@ for x in range(width):
                 plt.arrow(x, y, -0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
 
 # We then draw the gradient edge-cell pairs, which uses a little bit of a weird system to determine the direction (see the function)
-for x in range(width-1):
-    for y in range(height-1):
+for x in range(x_offset, x_offset + width-1):
+    for y in range(y_offset, y_offset + height-1):
         if gradient_pair_edge_cell[x][y] != 0:
             if gradient_pair_edge_cell[x][y] == 1:
                 plt.arrow(x + 0.5, y + 1, 0, -0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)

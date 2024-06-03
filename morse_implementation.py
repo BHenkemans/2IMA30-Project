@@ -285,7 +285,7 @@ for x in range(x_offset, x_offset + width-1):
 # We then draw the edges
 for x in range(x_offset, x_offset + width):
     for y in range(y_offset, y_offset + height):
-        if x < width - 1:
+        if x < x_offset + width - 1:
             if horizontal_edges[x][y][2] == 1:
                 plt.plot([x, x+1], [y, y], 'g', zorder=3)
                 path = make_segment_around_saddle(x, y, 1)
@@ -293,7 +293,7 @@ for x in range(x_offset, x_offset + width):
                 plt.plot(x_values, y_values, 'black', zorder=2)
             else:
                 plt.plot([x, x+1], [y, y], 'grey', zorder=1)
-        if y < height - 1:
+        if y < y_offset + height - 1:
             if vertical_edges[x][y][2] == 1:
                 plt.plot([x, x], [y, y+1], 'g', zorder=3)
                 path = make_segment_around_saddle(x, y, 0)

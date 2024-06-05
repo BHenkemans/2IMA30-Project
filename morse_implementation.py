@@ -268,6 +268,8 @@ print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
 
 #print(is_minimum[:20, :20])
 
+#STEP X: Visualizing the gradient fields
+
 # We now plot the resulting gradient vector field
 width, height = 20, 20
 x_offset, y_offset = 1450, 30

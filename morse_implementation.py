@@ -369,4 +369,23 @@ plt.gca().invert_yaxis()
 plt.gca().set_facecolor('lightgrey')
 # We set the aspect ratio to be equal
 plt.axis('equal')
-plt.savefig('islandsLowerRes.png', format='png', dpi=3000)
+plt.savefig('islandsStart.png', format='png', dpi=3000)
+
+# Statistics:
+# At the beginning(t=50) we have:
+#  10543 minima
+#  20807 saddles
+#  10265 maxima
+#  686 islands
+
+# At the middle(t=330) we have:
+#  2766 minima
+#  6036 saddles
+#  3271 maxima
+#  23 islands
+
+# At the end(t=659) we have:
+#  5577 minima
+#  16724 saddles 
+#  11148 maxima
+#  26 islands

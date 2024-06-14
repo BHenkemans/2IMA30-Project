@@ -9,10 +9,7 @@ imp = impMillie
 base_points = imp[0].copy()
 data_points = imp[659].copy().T
 
-print(data_points.shape)
-
 IBL = base_points.min()
-print(data_points.min(), data_points.max())
 
 z = data_points.copy()
 # z = np.array([[x**2 + y**2 for x in range(20)] for y in range(20)])
@@ -33,9 +30,6 @@ def edge_value(coord_x, coord_y, dir, eps=1e-8):
         second_point = data_points[coord_x][coord_y+1]
     return [max(point, second_point) + eps*min(point, second_point), point >= second_point, 1]
 
-print(data_points[10][15], data_points[10][16], data_points[11][15])
-# print(edge_value(10,15,True))
-
 # horizontal_edges = np.array([edge_value(coord_x, coord_y, 1) for coord_x, coord_y in zip(np.arange(1600-1), np.arange(160-1))])
 # horizontal_edges = np.zeros((1600-1, 160))
 horizontal_edges = np.empty((1600-1, 160),object)
@@ -50,7 +44,6 @@ for coord_x in range(1600):
     for coord_y in range(160-1):
         vertical_edges[coord_x][coord_y] = edge_value(coord_x, coord_y, 0)
 
-print(horizontal_edges[10][15])
 
 def cell_value(coord_x, coord_y, eps = 1e-8):
     """Determines cell value based on edges around it
@@ -67,8 +60,6 @@ def cell_value(coord_x, coord_y, eps = 1e-8):
         opp_edge = max_edge + 1
     else:
         opp_edge = max_edge - 1
-    # if coord_y == 150 and coord_x == 1500:
-    # print(max_edge, opp_edge, options)
     return options[max_edge] + eps**2 *  options[opp_edge], "{:02b}".format(3 - max_edge)
 
 # cell_values = np.zeros((1600-1, 160-1))
@@ -76,11 +67,6 @@ cell_values = np.empty((1600-1, 160-1),object)
 for coord_x in range(1600-1):
     for coord_y in range(160-1):
         cell_values[coord_x][coord_y] = cell_value(coord_x, coord_y)
-        if coord_x == 1500 and coord_y == 100:
-            print(horizontal_edges[coord_x][coord_y])
-
-print(cell_values[0][0])
-print(np.min(horizontal_edges), np.min(vertical_edges), np.min(cell_values))
 
 # STEP 2: gradient pairs assignen
 
@@ -138,7 +124,7 @@ def draw_vertex_edge_pair(coord_x, coord_y):
 for coord_x in range(1600):
     for coord_y in range(160):
         draw_vertex_edge_pair(coord_x, coord_y)
-print(np.count_nonzero(is_minimum)) # Geeft 5577
+print("minima: " + str(np.count_nonzero(is_minimum))) # Geeft 5577
 
 
 
@@ -206,9 +192,7 @@ for coord_x in range(1600):
         if coord_y != 159:
             draw_edge_cell_pair(vertical_edges, coord_x, coord_y)
 
-print(np.count_nonzero(gradient_pair_edge_cell==0)) #geeft 11148
-#print(np.count_nonzero(is_maximum)) # Geeft 11148
-print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
+print("saddles: " + str(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles)))
 
 
 # STEP 3 defining maxima, saddles, minima
@@ -258,21 +242,56 @@ def make_segment_around_saddle(coord_x, coord_y, dir):
     first_path, second_path = make_paths_from_saddle(coord_x, coord_y, dir)
     return list(reversed(first_path)) + second_path
 
-# Known saddle check:
-print(make_paths_from_saddle(582, 44, 1))
-print(make_paths_from_saddle(1433, 47, 1))
-print(make_paths_from_saddle(1591, 30, 1))
+# STEP 5: Merge maxima if they are connected by a (non-diagonal) path that does not go below the IBL
+# We will do this using breadth-first search from the maxima
+# We will use a queue to keep track of the cells we still need to visit
+# We will use a dictionary to keep track of the cells we have already visited
 
-print(make_segment_around_saddle(1433, 47, 1))
-print(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
+# In order to keep track of the amount of islands, we will create a copy of the is_maximum array
+is_island = is_maximum.copy()
 
-#print(is_minimum[:20, :20])
+# If a maximum is below the IBL, we will not consider it part of an island
+for x in range(1599):
+    for y in range(159):
+        if is_island[x][y]:
+            if cell_values[x][y][0] < IBL:
+                is_island[x][y] = 0
+
+# We will now define a function that merges the maxima
+def merge_maxima(start):
+    queue = [start]
+    visited = set([start])
+    # We will now perform a breadth-first search
+    while queue:
+        x, y = queue.pop(0)
+        for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+            new_x, new_y = x + dx, y + dy
+            if 0 <= new_x < 1599 and 0 <= new_y < 159:
+                # If the cell is not visited and the cell value is above the IBL, we will add it to the queue
+                if (new_x, new_y) not in visited and cell_values[new_x][new_y][0] >= IBL:
+                    visited.add((new_x, new_y))
+                    queue.append((new_x, new_y))
+                    # If the cell is a maximum, we will 'merge' it with the start by setting it to 0
+                    if is_maximum[new_x][new_y] == 1:
+                        is_island[new_x][new_y] = 0
+
+# For each maximum, we will merge it with all connected maxima
+for x in range(1599):
+    for y in range(159):
+        if is_island[x][y] == 1:
+            merge_maxima((x, y))
+
+print("maxima: " + str(np.count_nonzero(is_maximum)))
+print("islands: " + str(np.count_nonzero(is_island)))
+
+
+
 
 #STEP X: Visualizing the gradient fields
 
 # We now plot the resulting gradient vector field
-width, height = 20, 20
-x_offset, y_offset = 1450, 30
+width, height = 1600, 160
+x_offset, y_offset = 0, 0
 
 # Since pyplot draws from bottom to top, we first draw the cells for maxima
 for x in range(x_offset, x_offset + width-1):
@@ -281,64 +300,66 @@ for x in range(x_offset, x_offset + width-1):
             plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='lightblue', zorder=0)
         else:
             plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='bisque', zorder=0)
-        if is_maximum[x][y] == 1:
+        if is_island[x][y] == 1:
+            plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='darkseagreen', zorder=0)
+        elif is_maximum[x][y] == 1:
             plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='red', zorder=0)
 
-# We then draw the edges
-for x in range(x_offset, x_offset + width):
-    for y in range(y_offset, y_offset + height):
-        if x < x_offset + width - 1:
-            if horizontal_edges[x][y][2] == 1:
-                plt.plot([x, x+1], [y, y], 'g', zorder=3)
-                path = make_segment_around_saddle(x, y, 1)
-                x_values, y_values = zip(*path)
-                plt.plot(x_values, y_values, 'black', zorder=2)
-            else:
-                plt.plot([x, x+1], [y, y], 'grey', zorder=1)
-        if y < y_offset + height - 1:
-            if vertical_edges[x][y][2] == 1:
-                plt.plot([x, x], [y, y+1], 'g', zorder=3)
-                path = make_segment_around_saddle(x, y, 0)
-                x_values, y_values = zip(*path)
-                plt.plot(x_values, y_values, 'black', zorder=2)
-            else:
-                plt.plot([x, x], [y, y+1], 'grey', zorder = 1)
+# # We then draw the edges
+# for x in range(x_offset, x_offset + width):
+#     for y in range(y_offset, y_offset + height):
+#         if x < x_offset + width - 1:
+#             if horizontal_edges[x][y][2] == 1:
+#                 plt.plot([x, x+1], [y, y], 'g', zorder=3)
+#                 path = make_segment_around_saddle(x, y, 1)
+#                 x_values, y_values = zip(*path)
+#                 plt.plot(x_values, y_values, 'black', zorder=2)
+#             else:
+#                 plt.plot([x, x+1], [y, y], 'grey', zorder=1)
+#         if y < y_offset + height - 1:
+#             if vertical_edges[x][y][2] == 1:
+#                 plt.plot([x, x], [y, y+1], 'g', zorder=3)
+#                 path = make_segment_around_saddle(x, y, 0)
+#                 x_values, y_values = zip(*path)
+#                 plt.plot(x_values, y_values, 'black', zorder=2)
+#             else:
+#                 plt.plot([x, x], [y, y+1], 'grey', zorder = 1)
 
-# We then draw the nodes
-for x in range(x_offset, x_offset + width):
-    for y in range(y_offset, y_offset + height):
-        if is_minimum[x][y] == 1:
-            plt.plot(x, y, marker = 'o', color='blue', zorder=4)
-            #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
-        else:
-            plt.plot(x, y, marker = 'o', color='grey', zorder=4)
-            #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
+# # We then draw the nodes
+# for x in range(x_offset, x_offset + width):
+#     for y in range(y_offset, y_offset + height):
+#         if is_minimum[x][y] == 1:
+#             plt.plot(x, y, marker = 'o', color='blue', zorder=4)
+#             #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
+#         else:
+#             plt.plot(x, y, marker = 'o', color='grey', zorder=4)
+#             #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
 
-# We then draw the gradient vertex-edge pairs
-for x in range(x_offset, x_offset + width):
-    for y in range(y_offset, y_offset + height):
-        if gradient_pair_vertex_edge[x][y] != 0:
-            if gradient_pair_vertex_edge[x][y] == 1:
-                plt.arrow(x, y, 0, -0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
-            elif gradient_pair_vertex_edge[x][y] == 2:
-                plt.arrow(x, y, 0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
-            elif gradient_pair_vertex_edge[x][y] == 3:
-                plt.arrow(x, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
-            elif gradient_pair_vertex_edge[x][y] == 4:
-                plt.arrow(x, y, -0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
+# # We then draw the gradient vertex-edge pairs
+# for x in range(x_offset, x_offset + width):
+#     for y in range(y_offset, y_offset + height):
+#         if gradient_pair_vertex_edge[x][y] != 0:
+#             if gradient_pair_vertex_edge[x][y] == 1:
+#                 plt.arrow(x, y, 0, -0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
+#             elif gradient_pair_vertex_edge[x][y] == 2:
+#                 plt.arrow(x, y, 0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
+#             elif gradient_pair_vertex_edge[x][y] == 3:
+#                 plt.arrow(x, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
+#             elif gradient_pair_vertex_edge[x][y] == 4:
+#                 plt.arrow(x, y, -0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
 
-# We then draw the gradient edge-cell pairs, which uses a little bit of a weird system to determine the direction (see the function)
-for x in range(x_offset, x_offset + width-1):
-    for y in range(y_offset, y_offset + height-1):
-        if gradient_pair_edge_cell[x][y] != 0:
-            if gradient_pair_edge_cell[x][y] == 1:
-                plt.arrow(x + 0.5, y + 1, 0, -0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
-            elif gradient_pair_edge_cell[x][y] == 2:
-                plt.arrow(x + 0.5, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
-            elif gradient_pair_edge_cell[x][y] == 3:
-                plt.arrow(x + 1, y + 0.5, -0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
-            elif gradient_pair_edge_cell[x][y] == 4:
-                plt.arrow(x, y + 0.5, 0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
+# # We then draw the gradient edge-cell pairs, which uses a little bit of a weird system to determine the direction (see the function)
+# for x in range(x_offset, x_offset + width-1):
+#     for y in range(y_offset, y_offset + height-1):
+#         if gradient_pair_edge_cell[x][y] != 0:
+#             if gradient_pair_edge_cell[x][y] == 1:
+#                 plt.arrow(x + 0.5, y + 1, 0, -0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
+#             elif gradient_pair_edge_cell[x][y] == 2:
+#                 plt.arrow(x + 0.5, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
+#             elif gradient_pair_edge_cell[x][y] == 3:
+#                 plt.arrow(x + 1, y + 0.5, -0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
+#             elif gradient_pair_edge_cell[x][y] == 4:
+#                 plt.arrow(x, y + 0.5, 0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
 
 #plt.imshow(z.T, cmap='terrain')
 
@@ -348,4 +369,4 @@ plt.gca().invert_yaxis()
 plt.gca().set_facecolor('lightgrey')
 # We set the aspect ratio to be equal
 plt.axis('equal')
-plt.show()
+plt.savefig('islandsLowerRes.png', format='png', dpi=3000)

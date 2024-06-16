@@ -2,20 +2,8 @@ import tifffile
 import matplotlib.pyplot as plt
 import numpy as np
 
-impMillie = tifffile.imread('Datasets\detrended.tiff')
-
-imp = impMillie
-
-base_points = imp[0].copy()
-data_points = imp[659].copy().T
-
-IBL = base_points.min()
-
-z = data_points.copy()
-# z = np.array([[x**2 + y**2 for x in range(20)] for y in range(20)])
-x, y = np.meshgrid(range(z.shape[0]), range(z.shape[1]))
-
-# STEP 1: Morse function values assignen
+# First, we define all the functions we need to determine the Morse function values and the gradient pairs
+# STEP 1: Assign Morse function values to the edges
 def edge_value(coord_x, coord_y, dir, eps=1e-8):
     """determines morse func value of edge with 
     direction True == Right (and false is downwards)
@@ -30,21 +18,7 @@ def edge_value(coord_x, coord_y, dir, eps=1e-8):
         second_point = data_points[coord_x][coord_y+1]
     return [max(point, second_point) + eps*min(point, second_point), point >= second_point, 1]
 
-# horizontal_edges = np.array([edge_value(coord_x, coord_y, 1) for coord_x, coord_y in zip(np.arange(1600-1), np.arange(160-1))])
-# horizontal_edges = np.zeros((1600-1, 160))
-horizontal_edges = np.empty((1600-1, 160),object)
-for coord_x in range(1600-1):
-    for coord_y in range(160):
-        horizontal_edges[coord_x][coord_y] = edge_value(coord_x, coord_y, 1)
-
-# vertical_edges = [edge_value(coord_x, coord_y, 0) for coord_x, coord_y in zip(np.arange(1600-1), np.arange(160-1))]
-# vertical_edges = np.zeros((1600, 160-1))
-vertical_edges = np.empty((1600, 160-1),object)
-for coord_x in range(1600):
-    for coord_y in range(160-1):
-        vertical_edges[coord_x][coord_y] = edge_value(coord_x, coord_y, 0)
-
-
+# STEP 2: Assign Morse function values to the cells
 def cell_value(coord_x, coord_y, eps = 1e-8):
     """Determines cell value based on edges around it
     Max edge value + eps^2 * opposite (not min)
@@ -62,27 +36,12 @@ def cell_value(coord_x, coord_y, eps = 1e-8):
         opp_edge = max_edge - 1
     return options[max_edge] + eps**2 *  options[opp_edge], "{:02b}".format(3 - max_edge)
 
-# cell_values = np.zeros((1600-1, 160-1))
-cell_values = np.empty((1600-1, 160-1),object)
-for coord_x in range(1600-1):
-    for coord_y in range(160-1):
-        cell_values[coord_x][coord_y] = cell_value(coord_x, coord_y)
-
-# STEP 2: gradient pairs assignen
-
-is_minimum = np.ones((1600, 160))
-horizontal_saddles = np.ones((1600-1, 160))
-vertical_saddles = np.ones((1600, 160-1))
-gradient_pair_vertex_edge = np.empty((1600, 160),object)
-
+# STEP 3: Determine the gradient pairs between the vertices and edges
 def draw_vertex_edge_pair(coord_x, coord_y):
     """Determines for a vertex whether it is the maximum of an adjacent edge.
     If it is, determine for all edges of which it is a maximum, add a gradient pair to the smallest edge.
     0 => minimum (no larger edges), and 1 through 4 for clockwise pairs (starting top)
     """
-    global horizontal_edges
-    global vertical_edges
-    global is_minimum
 
     gradient_so_far = 0
     gradient_min_value = np.inf
@@ -121,19 +80,7 @@ def draw_vertex_edge_pair(coord_x, coord_y):
 
     return ((coord_x, coord_y), gradient_so_far)
 
-for coord_x in range(1600):
-    for coord_y in range(160):
-        draw_vertex_edge_pair(coord_x, coord_y)
-print("minima: " + str(np.count_nonzero(is_minimum))) # Geeft 5577
-
-
-
-# We now want to determine the gradient pairs for the cells
-is_maximum = np.ones((1600-1, 160-1))
-# this is seen from the cell with coord_x coord_y
-# note that this means the arrows need to be reversed in visualization
-gradient_pair_edge_cell = np.zeros((1600-1, 160-1),object)
-
+# STEP 4: Determine the gradient pairs between the edges and cells
 def draw_edge_cell_pair(array, coord_x, coord_y):
     """ Determines for an edge whether it is the maximum of an adjacent cell.
     If it is, determine for all cells of which it is a maximum, the smallest cell 
@@ -185,26 +132,16 @@ def draw_edge_cell_pair(array, coord_x, coord_y):
             is_maximum[coord_x][coord_y] = 0
             gradient_pair_edge_cell[coord_x][coord_y] = gradient_so_far
 
-for coord_x in range(1600):
-    for coord_y in range(160):
-        if coord_x != 1599:
-            draw_edge_cell_pair(horizontal_edges, coord_x, coord_y)
-        if coord_y != 159:
-            draw_edge_cell_pair(vertical_edges, coord_x, coord_y)
 
-print("saddles: " + str(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles)))
-
-
-# STEP 3 defining maxima, saddles, minima
+# STEP 5 defining maxima, saddles, minima
 # minimum: is_minimum[x][y] == 1
 # saddle:   als horziontal_edges[x][y][2] == 1
 #           als vertical_edges[x][y][2] == 1
 # maxima: als is_maximum[x][y] == 1
 
-# STEP 4: Make segments (between minima and saddles)
+# STEP 6: Make segments (between minima and saddles)
 # a segment is a path from a saddle to a minimum
     # the path consists of a sequence of (x,y)-coordinates
-
 def make_paths_from_saddle(coord_x, coord_y, dir):
     # path = np.empty((1,2), [])
     first_vertex = [coord_x, coord_y]
@@ -242,22 +179,10 @@ def make_segment_around_saddle(coord_x, coord_y, dir):
     first_path, second_path = make_paths_from_saddle(coord_x, coord_y, dir)
     return list(reversed(first_path)) + second_path
 
-# STEP 5: Merge maxima if they are connected by a (non-diagonal) path that does not go below the IBL
+# STEP 7: Merge maxima if they are connected by a (non-diagonal) path that does not go below the IBL
 # We will do this using breadth-first search from the maxima
 # We will use a queue to keep track of the cells we still need to visit
 # We will use a dictionary to keep track of the cells we have already visited
-
-# In order to keep track of the amount of islands, we will create a copy of the is_maximum array
-is_island = is_maximum.copy()
-
-# If a maximum is below the IBL, we will not consider it part of an island
-for x in range(1599):
-    for y in range(159):
-        if is_island[x][y]:
-            if cell_values[x][y][0] < IBL:
-                is_island[x][y] = 0
-
-# We will now define a function that merges the maxima
 def merge_maxima(start):
     queue = [start]
     visited = set([start])
@@ -274,104 +199,249 @@ def merge_maxima(start):
                     # If the cell is a maximum, we will 'merge' it with the start by setting it to 0
                     if is_maximum[new_x][new_y] == 1:
                         is_island[new_x][new_y] = 0
-
-# For each maximum, we will merge it with all connected maxima
-for x in range(1599):
-    for y in range(159):
-        if is_island[x][y] == 1:
-            merge_maxima((x, y))
-
-print("maxima: " + str(np.count_nonzero(is_maximum)))
-print("islands: " + str(np.count_nonzero(is_island)))
+    island_sizes.append(len(visited))
 
 
+#STEP 8: Visualizing the data
+def draw_cells():
+    for x in range(x_offset, x_offset + width-1):
+        for y in range(y_offset, y_offset + height-1):
+            if cell_values[x][y][0] < IBL:
+                plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='lightblue', zorder=0)
+            else:
+                plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='bisque', zorder=0)
+            if is_island[x][y] == 1:
+                plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='darkseagreen', zorder=0)
+            elif is_maximum[x][y] == 1:
+                plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='red', zorder=0)
+
+def draw_edges():
+    for x in range(x_offset, x_offset + width):
+        for y in range(y_offset, y_offset + height):
+            if x < x_offset + width - 1:
+                if horizontal_edges[x][y][2] == 1:
+                    plt.plot([x, x+1], [y, y], 'g', zorder=3)
+                    path = make_segment_around_saddle(x, y, 1)
+                    x_values, y_values = zip(*path)
+                    plt.plot(x_values, y_values, 'black', zorder=2)
+                else:
+                    plt.plot([x, x+1], [y, y], 'grey', zorder=1)
+            if y < y_offset + height - 1:
+                if vertical_edges[x][y][2] == 1:
+                    plt.plot([x, x], [y, y+1], 'g', zorder=3)
+                    path = make_segment_around_saddle(x, y, 0)
+                    x_values, y_values = zip(*path)
+                    plt.plot(x_values, y_values, 'black', zorder=2)
+                else:
+                    plt.plot([x, x], [y, y+1], 'grey', zorder = 1)
+
+def draw_nodes():
+    for x in range(x_offset, x_offset + width):
+        for y in range(y_offset, y_offset + height):
+            if is_minimum[x][y] == 1:
+                plt.plot(x, y, marker = 'o', color='blue', zorder=4)
+                #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
+            else:
+                plt.plot(x, y, marker = 'o', color='grey', zorder=4)
+                #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
+
+def draw_gradient_vertex_edge():
+    for x in range(x_offset, x_offset + width):
+        for y in range(y_offset, y_offset + height):
+            if gradient_pair_vertex_edge[x][y] != 0:
+                if gradient_pair_vertex_edge[x][y] == 1:
+                    plt.arrow(x, y, 0, -0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
+                elif gradient_pair_vertex_edge[x][y] == 2:
+                    plt.arrow(x, y, 0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
+                elif gradient_pair_vertex_edge[x][y] == 3:
+                    plt.arrow(x, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
+                elif gradient_pair_vertex_edge[x][y] == 4:
+                    plt.arrow(x, y, -0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
+
+# We then draw the gradient edge-cell pairs, which uses a little bit of a weird system to determine the direction (see the function)
+def draw_gradient_edge_cell():
+    for x in range(x_offset, x_offset + width-1):
+        for y in range(y_offset, y_offset + height-1):
+            if gradient_pair_edge_cell[x][y] != 0:
+                if gradient_pair_edge_cell[x][y] == 1:
+                    plt.arrow(x + 0.5, y + 1, 0, -0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
+                elif gradient_pair_edge_cell[x][y] == 2:
+                    plt.arrow(x + 0.5, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
+                elif gradient_pair_edge_cell[x][y] == 3:
+                    plt.arrow(x + 1, y + 0.5, -0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
+                elif gradient_pair_edge_cell[x][y] == 4:
+                    plt.arrow(x, y + 0.5, 0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
+
+def iteration(t):
+    global data_points, horizontal_edges, vertical_edges, is_minimum, is_maximum, horizontal_saddles, vertical_saddles, cell_values, gradient_pair_vertex_edge, gradient_pair_edge_cell, is_island, island_sizes
+    data_points = imp[t].copy().T
+
+    # We will now define the horizontal and vertical edges
+    horizontal_edges = np.empty((1600-1, 160),object)
+    for coord_x in range(1600-1):
+        for coord_y in range(160):
+            horizontal_edges[coord_x][coord_y] = edge_value(coord_x, coord_y, 1)
+
+    vertical_edges = np.empty((1600, 160-1),object)
+    for coord_x in range(1600):
+        for coord_y in range(160-1):
+            vertical_edges[coord_x][coord_y] = edge_value(coord_x, coord_y, 0)
+
+    # Then we will define the cell values
+    cell_values = np.empty((1600-1, 160-1),object)
+    for coord_x in range(1600-1):
+        for coord_y in range(160-1):
+            cell_values[coord_x][coord_y] = cell_value(coord_x, coord_y)
+
+    # We will now define the minima, saddles and vertex-edge gradient pairs
+    is_minimum = np.ones((1600, 160))
+    is_maximum = np.ones((1600-1, 160-1))
+
+    horizontal_saddles = np.ones((1600-1, 160))
+    vertical_saddles = np.ones((1600, 160-1))
+
+    gradient_pair_vertex_edge = np.empty((1600, 160),object)
+    gradient_pair_edge_cell = np.zeros((1600-1, 160-1),object)
+
+    for coord_x in range(1600):
+        for coord_y in range(160):
+            draw_vertex_edge_pair(coord_x, coord_y)
+            if coord_x != 1599:
+                draw_edge_cell_pair(horizontal_edges, coord_x, coord_y)
+            if coord_y != 159:
+                draw_edge_cell_pair(vertical_edges, coord_x, coord_y)
+
+    # print("minima: " + str(np.count_nonzero(is_minimum)))
+    # print("maxima: " + str(np.count_nonzero(is_maximum)))
+    # print("saddles: " + str(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles)))
+
+    # In order to keep track of the amount of islands, we will create a copy of the is_maximum array
+    is_island = is_maximum.copy()
+    island_sizes = []
+    # If a maximum is below the IBL, we will not consider it part of an island
+    for x in range(1599):
+        for y in range(159):
+            if is_island[x][y]:
+                if cell_values[x][y][0] < IBL:
+                    is_island[x][y] = 0
+
+    # For each maximum, we will merge it with all connected maxima
+    for x in range(1599):
+        for y in range(159):
+            if is_island[x][y] == 1:
+                merge_maxima((x, y))
+                
+    # As the size of the first island is disproportionately large, we remove it
+    island_sizes.pop(0)
+
+    # print("islands: " + str(np.count_nonzero(is_island)))
+    # print("island sizes: " + str(island_sizes))
+    # print("average island size: " + str(np.mean(island_sizes)))
+
+def visualize():
+    # Settings for visualizing data
+    global x_offset, y_offset, width, height
+    width, height = 10, 10
+    x_offset, y_offset = 0, 0
+
+    # Determine what you want to draw by commenting below functions
+    draw_cells()
+    draw_edges()
+    draw_nodes()
+    draw_gradient_vertex_edge()
+    draw_gradient_edge_cell()
+
+    #plt.imshow(data_points.T, cmap='terrain')
+
+    # Since our data has the origin in the top left, we invert the y-axis
+    plt.gca().invert_yaxis()
+    # We set the background color to lightgrey for better visibility
+    plt.gca().set_facecolor('lightgrey')
+    # We set the aspect ratio to be equal
+    plt.axis('equal')
+    plt.show()
+    #plt.savefig('islandsStart.png', format='png', dpi=3000)
 
 
-#STEP X: Visualizing the gradient fields
+### MAIN CODE ###
+# Read the data
+impMillie = tifffile.imread('Datasets\detrended.tiff')
+imp = impMillie
 
-# We now plot the resulting gradient vector field
-width, height = 1600, 160
-x_offset, y_offset = 0, 0
+# We will now define the data points and the base points
+base_points = imp[0].copy()
+# We will now define the IBL, which represents our water level
+IBL = base_points.min()
 
-# Since pyplot draws from bottom to top, we first draw the cells for maxima
-for x in range(x_offset, x_offset + width-1):
-    for y in range(y_offset, y_offset + height-1):
-        if cell_values[x][y][0] < IBL:
-            plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='lightblue', zorder=0)
-        else:
-            plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='bisque', zorder=0)
-        if is_island[x][y] == 1:
-            plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='darkseagreen', zorder=0)
-        elif is_maximum[x][y] == 1:
-            plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='red', zorder=0)
+nOfMinima=[]
+nOfMaxima=[]
+nOfSaddles=[]
+nOfIslands=[]
+nOfIslandsSizes=[]
+for t in range(50, 661, 10):
+    print("iteration: " + str(t))
+    iteration(t)
+    nOfMinima.append(np.count_nonzero(is_minimum))
+    nOfMaxima.append(np.count_nonzero(is_maximum))
+    nOfSaddles.append(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
+    nOfIslands.append(np.count_nonzero(is_island))
+    nOfIslandsSizes.append(np.mean(island_sizes))
 
-# # We then draw the edges
-# for x in range(x_offset, x_offset + width):
-#     for y in range(y_offset, y_offset + height):
-#         if x < x_offset + width - 1:
-#             if horizontal_edges[x][y][2] == 1:
-#                 plt.plot([x, x+1], [y, y], 'g', zorder=3)
-#                 path = make_segment_around_saddle(x, y, 1)
-#                 x_values, y_values = zip(*path)
-#                 plt.plot(x_values, y_values, 'black', zorder=2)
-#             else:
-#                 plt.plot([x, x+1], [y, y], 'grey', zorder=1)
-#         if y < y_offset + height - 1:
-#             if vertical_edges[x][y][2] == 1:
-#                 plt.plot([x, x], [y, y+1], 'g', zorder=3)
-#                 path = make_segment_around_saddle(x, y, 0)
-#                 x_values, y_values = zip(*path)
-#                 plt.plot(x_values, y_values, 'black', zorder=2)
-#             else:
-#                 plt.plot([x, x], [y, y+1], 'grey', zorder = 1)
+x_values = list(range(50, 661, 10))
+ticks = list(range(0, len(x_values)))
 
-# # We then draw the nodes
-# for x in range(x_offset, x_offset + width):
-#     for y in range(y_offset, y_offset + height):
-#         if is_minimum[x][y] == 1:
-#             plt.plot(x, y, marker = 'o', color='blue', zorder=4)
-#             #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
-#         else:
-#             plt.plot(x, y, marker = 'o', color='grey', zorder=4)
-#             #plt.text(x, y, str(data_points[x][y]), color='black', ha='center', va='center', zorder=3)
+tick_spacing = 5
+display_x_values = x_values[::tick_spacing]
+display_ticks = ticks[::tick_spacing]
 
-# # We then draw the gradient vertex-edge pairs
-# for x in range(x_offset, x_offset + width):
-#     for y in range(y_offset, y_offset + height):
-#         if gradient_pair_vertex_edge[x][y] != 0:
-#             if gradient_pair_vertex_edge[x][y] == 1:
-#                 plt.arrow(x, y, 0, -0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
-#             elif gradient_pair_vertex_edge[x][y] == 2:
-#                 plt.arrow(x, y, 0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
-#             elif gradient_pair_vertex_edge[x][y] == 3:
-#                 plt.arrow(x, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
-#             elif gradient_pair_vertex_edge[x][y] == 4:
-#                 plt.arrow(x, y, -0.3, 0, head_width=0.1, head_length=0.1, color = 'yellow', zorder=5)
+# We save a plot of the number of minima, maxima, saddles, islands and the average island size over time
+plt.plot(nOfMinima, label='Minima')
+plt.ylim(bottom=0)
+plt.xticks(ticks = display_ticks, labels=display_x_values)
+plt.title('Number of minima over time')
+plt.xlabel('Time')
+plt.savefig('minima.png', format='png', dpi=300)
+plt.clf()
 
-# # We then draw the gradient edge-cell pairs, which uses a little bit of a weird system to determine the direction (see the function)
-# for x in range(x_offset, x_offset + width-1):
-#     for y in range(y_offset, y_offset + height-1):
-#         if gradient_pair_edge_cell[x][y] != 0:
-#             if gradient_pair_edge_cell[x][y] == 1:
-#                 plt.arrow(x + 0.5, y + 1, 0, -0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
-#             elif gradient_pair_edge_cell[x][y] == 2:
-#                 plt.arrow(x + 0.5, y, 0, 0.3, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
-#             elif gradient_pair_edge_cell[x][y] == 3:
-#                 plt.arrow(x + 1, y + 0.5, -0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
-#             elif gradient_pair_edge_cell[x][y] == 4:
-#                 plt.arrow(x, y + 0.5, 0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
+plt.plot(nOfMaxima, label='Maxima')
+plt.ylim(bottom=0)
+plt.xticks(ticks = display_ticks,labels=display_x_values)
+plt.title('Number of maxima over time')
+plt.savefig('maxima.png', format='png', dpi=300)
+plt.clf()
 
-#plt.imshow(z.T, cmap='terrain')
+plt.plot(nOfSaddles, label='Saddles')
+plt.ylim(bottom=0)
+plt.xticks(ticks = display_ticks,labels=display_x_values)
+plt.title('Number of saddles over time')
+plt.xlabel('Time')
+plt.savefig('saddles.png', format='png', dpi=300)
+plt.clf()
 
-# Since our data has the origin in the top left, we invert the y-axis
-plt.gca().invert_yaxis()
-# We set the background color to lightgrey for better visibility
-plt.gca().set_facecolor('lightgrey')
-# We set the aspect ratio to be equal
-plt.axis('equal')
-plt.savefig('islandsStart.png', format='png', dpi=3000)
+plt.plot(nOfIslands, label='Islands')
+plt.ylim(bottom=0)
+plt.xticks(ticks = display_ticks,labels=display_x_values)
+plt.title('Number of islands over time')
+plt.xlabel('Time')
+plt.savefig('islands.png', format='png', dpi=300)
+plt.clf()
 
-# Statistics:
+plt.plot(nOfIslandsSizes, label='Island sizes')
+plt.ylim(bottom=0)
+plt.xticks(ticks = display_ticks,labels=display_x_values)
+plt.title('Average island size over time')
+plt.xlabel('Time')
+plt.savefig('islandsSizes.png', format='png', dpi=300)
+plt.clf()
+
+
+
+### VISUALIZATION ###
+#visualize()
+
+
+
+### STATISTICS ###
 # At the beginning(t=50) we have:
 #  10543 minima
 #  20807 saddles

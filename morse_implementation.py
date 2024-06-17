@@ -184,6 +184,7 @@ def make_segment_around_saddle(coord_x, coord_y, dir):
 # We will use a queue to keep track of the cells we still need to visit
 # We will use a dictionary to keep track of the cells we have already visited
 def merge_maxima(start):
+    global total_volume
     queue = [start]
     visited = set([start])
     # We will now perform a breadth-first search
@@ -196,6 +197,7 @@ def merge_maxima(start):
                 if (new_x, new_y) not in visited and cell_values[new_x][new_y][0] >= IBL:
                     visited.add((new_x, new_y))
                     queue.append((new_x, new_y))
+                    total_volume += cell_values[new_x][new_y][0] - IBL
                     # If the cell is a maximum, we will 'merge' it with the start by setting it to 0
                     if is_maximum[new_x][new_y] == 1:
                         is_island[new_x][new_y] = 0
@@ -206,13 +208,13 @@ def merge_maxima(start):
 def draw_cells():
     for x in range(x_offset, x_offset + width-1):
         for y in range(y_offset, y_offset + height-1):
-            if cell_values[x][y][0] < IBL:
-                plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='lightblue', zorder=0)
-            else:
-                plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='bisque', zorder=0)
-            if is_island[x][y] == 1:
-                plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='darkseagreen', zorder=0)
-            elif is_maximum[x][y] == 1:
+            # if cell_values[x][y][0] < IBL:
+            #     plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='lightblue', zorder=0)
+            # else:
+            #     plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='bisque', zorder=0)
+            #if is_island[x][y] == 1:
+            #   plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='darkseagreen', zorder=0)
+            if is_maximum[x][y] == 1:
                 plt.fill([x, x+1, x+1, x], [y, y, y+1, y+1], color='red', zorder=0)
 
 def draw_edges():
@@ -223,7 +225,7 @@ def draw_edges():
                     plt.plot([x, x+1], [y, y], 'g', zorder=3)
                     path = make_segment_around_saddle(x, y, 1)
                     x_values, y_values = zip(*path)
-                    plt.plot(x_values, y_values, 'black', zorder=2)
+                    plt.plot(x_values, y_values, 'orange', zorder=2)
                 else:
                     plt.plot([x, x+1], [y, y], 'grey', zorder=1)
             if y < y_offset + height - 1:
@@ -231,7 +233,7 @@ def draw_edges():
                     plt.plot([x, x], [y, y+1], 'g', zorder=3)
                     path = make_segment_around_saddle(x, y, 0)
                     x_values, y_values = zip(*path)
-                    plt.plot(x_values, y_values, 'black', zorder=2)
+                    plt.plot(x_values, y_values, 'orange', zorder=2)
                 else:
                     plt.plot([x, x], [y, y+1], 'grey', zorder = 1)
 
@@ -273,8 +275,10 @@ def draw_gradient_edge_cell():
                     plt.arrow(x, y + 0.5, 0.3, 0, head_width=0.1, head_length=0.1, color = 'purple', zorder=5)
 
 def iteration(t):
-    global data_points, horizontal_edges, vertical_edges, is_minimum, is_maximum, horizontal_saddles, vertical_saddles, cell_values, gradient_pair_vertex_edge, gradient_pair_edge_cell, is_island, island_sizes
+    global data_points, horizontal_edges, vertical_edges, is_minimum, is_maximum, horizontal_saddles, vertical_saddles, cell_values, gradient_pair_vertex_edge, gradient_pair_edge_cell, is_island, island_sizes, total_volume
     data_points = imp[t].copy().T
+    global total_volume
+    total_volume = 0
 
     # We will now define the horizontal and vertical edges
     horizontal_edges = np.empty((1600-1, 160),object)
@@ -318,6 +322,7 @@ def iteration(t):
     # In order to keep track of the amount of islands, we will create a copy of the is_maximum array
     is_island = is_maximum.copy()
     island_sizes = []
+
     # If a maximum is below the IBL, we will not consider it part of an island
     for x in range(1599):
         for y in range(159):
@@ -342,7 +347,7 @@ def visualize():
     # Settings for visualizing data
     global x_offset, y_offset, width, height
     width, height = 10, 10
-    x_offset, y_offset = 0, 0
+    x_offset, y_offset = 1500, 30
 
     # Determine what you want to draw by commenting below functions
     draw_cells()
@@ -359,8 +364,8 @@ def visualize():
     plt.gca().set_facecolor('lightgrey')
     # We set the aspect ratio to be equal
     plt.axis('equal')
-    plt.show()
-    #plt.savefig('islandsStart.png', format='png', dpi=3000)
+    #plt.show()
+    plt.savefig('MoreSmaleCopmlex.png', format='png', dpi=3000)
 
 
 ### MAIN CODE ###
@@ -372,12 +377,17 @@ imp = impMillie
 base_points = imp[0].copy()
 # We will now define the IBL, which represents our water level
 IBL = base_points.min()
+# iteration(550)
+# print("total volume: " + str(total_volume))
+
+#visualize()
 
 nOfMinima=[]
 nOfMaxima=[]
 nOfSaddles=[]
 nOfIslands=[]
 nOfIslandsSizes=[]
+nOfVolume=[]
 for t in range(50, 661, 10):
     print("iteration: " + str(t))
     iteration(t)
@@ -386,6 +396,7 @@ for t in range(50, 661, 10):
     nOfSaddles.append(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
     nOfIslands.append(np.count_nonzero(is_island))
     nOfIslandsSizes.append(np.mean(island_sizes))
+    nOfVolume.append(total_volume)
 
 x_values = list(range(50, 661, 10))
 ticks = list(range(0, len(x_values)))
@@ -395,43 +406,51 @@ display_x_values = x_values[::tick_spacing]
 display_ticks = ticks[::tick_spacing]
 
 # We save a plot of the number of minima, maxima, saddles, islands and the average island size over time
-plt.plot(nOfMinima, label='Minima')
-plt.ylim(bottom=0)
-plt.xticks(ticks = display_ticks, labels=display_x_values)
-plt.title('Number of minima over time')
-plt.xlabel('Time')
-plt.savefig('minima.png', format='png', dpi=300)
-plt.clf()
+# plt.plot(nOfMinima, label='Minima')
+# plt.ylim(bottom=0)
+# plt.xticks(ticks = display_ticks, labels=display_x_values)
+# plt.title('Number of minima over time')
+# plt.xlabel('Time')
+# plt.savefig('minima.png', format='png', dpi=300)
+# plt.clf()
 
-plt.plot(nOfMaxima, label='Maxima')
+# plt.plot(nOfMaxima, label='Maxima')
+# plt.ylim(bottom=0)
+# plt.xticks(ticks = display_ticks,labels=display_x_values)
+# plt.title('Number of maxima over time')
+# plt.savefig('maxima.png', format='png', dpi=300)
+# plt.clf()
+
+# plt.plot(nOfSaddles, label='Saddles')
+# plt.ylim(bottom=0)
+# plt.xticks(ticks = display_ticks,labels=display_x_values)
+# plt.title('Number of saddles over time')
+# plt.xlabel('Time')
+# plt.savefig('saddles.png', format='png', dpi=300)
+# plt.clf()
+
+# plt.plot(nOfIslands, label='Islands')
+# plt.ylim(bottom=0)
+# plt.xticks(ticks = display_ticks,labels=display_x_values)
+# plt.title('Number of islands over time')
+# plt.xlabel('Time')
+# plt.savefig('islandsZoom.png', format='png', dpi=300)
+# plt.clf()
+
+# plt.plot(nOfIslandsSizes, label='Island sizes')
+# plt.ylim(bottom=0)
+# plt.xticks(ticks = display_ticks,labels=display_x_values)
+# plt.title('Average island size over time')
+# plt.xlabel('Time')
+# plt.savefig('islandsSizesZoom.png', format='png', dpi=300)
+# plt.clf()
+
+plt.plot(nOfVolume, label='Total volume')
 plt.ylim(bottom=0)
 plt.xticks(ticks = display_ticks,labels=display_x_values)
-plt.title('Number of maxima over time')
-plt.savefig('maxima.png', format='png', dpi=300)
-plt.clf()
-
-plt.plot(nOfSaddles, label='Saddles')
-plt.ylim(bottom=0)
-plt.xticks(ticks = display_ticks,labels=display_x_values)
-plt.title('Number of saddles over time')
+plt.title('Total island volume over time')
 plt.xlabel('Time')
-plt.savefig('saddles.png', format='png', dpi=300)
-plt.clf()
-
-plt.plot(nOfIslands, label='Islands')
-plt.ylim(bottom=0)
-plt.xticks(ticks = display_ticks,labels=display_x_values)
-plt.title('Number of islands over time')
-plt.xlabel('Time')
-plt.savefig('islands.png', format='png', dpi=300)
-plt.clf()
-
-plt.plot(nOfIslandsSizes, label='Island sizes')
-plt.ylim(bottom=0)
-plt.xticks(ticks = display_ticks,labels=display_x_values)
-plt.title('Average island size over time')
-plt.xlabel('Time')
-plt.savefig('islandsSizes.png', format='png', dpi=300)
+plt.savefig('islandsVolume.png', format='png', dpi=300)
 plt.clf()
 
 
@@ -447,15 +466,18 @@ plt.clf()
 #  20807 saddles
 #  10265 maxima
 #  686 islands
+#  5787788237.842979 total volume
 
 # At the middle(t=330) we have:
 #  2766 minima
 #  6036 saddles
 #  3271 maxima
 #  23 islands
+#  256458618025.84937
 
 # At the end(t=659) we have:
 #  5577 minima
 #  16724 saddles 
 #  11148 maxima
 #  26 islands
+#  398419317334.8191 total volume

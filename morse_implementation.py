@@ -187,6 +187,7 @@ def merge_maxima(start):
     global total_volume
     queue = [start]
     visited = set([start])
+    island_volume = 0
     # We will now perform a breadth-first search
     while queue:
         x, y = queue.pop(0)
@@ -197,11 +198,12 @@ def merge_maxima(start):
                 if (new_x, new_y) not in visited and cell_values[new_x][new_y][0] >= IBL:
                     visited.add((new_x, new_y))
                     queue.append((new_x, new_y))
-                    total_volume += cell_values[new_x][new_y][0] - IBL
+                    island_volume += cell_values[new_x][new_y][0] - IBL
                     # If the cell is a maximum, we will 'merge' it with the start by setting it to 0
                     if is_maximum[new_x][new_y] == 1:
                         is_island[new_x][new_y] = 0
     island_sizes.append(len(visited))
+    total_volume.append(island_volume)
 
 
 #STEP 8: Visualizing the data
@@ -278,7 +280,7 @@ def iteration(t):
     global data_points, horizontal_edges, vertical_edges, is_minimum, is_maximum, horizontal_saddles, vertical_saddles, cell_values, gradient_pair_vertex_edge, gradient_pair_edge_cell, is_island, island_sizes, total_volume
     data_points = imp[t].copy().T
     global total_volume
-    total_volume = 0
+    total_volume = []
 
     # We will now define the horizontal and vertical edges
     horizontal_edges = np.empty((1600-1, 160),object)
@@ -337,8 +339,9 @@ def iteration(t):
                 merge_maxima((x, y))
                 
     # As the size of the first island is disproportionately large, we remove it
-    island_sizes.pop(0)
-
+    if len(island_sizes) > 0:
+        island_sizes.pop(0)
+        total_volume.pop(0)
     # print("islands: " + str(np.count_nonzero(is_island)))
     # print("island sizes: " + str(island_sizes))
     # print("average island size: " + str(np.mean(island_sizes)))
@@ -376,7 +379,7 @@ imp = impMillie
 # We will now define the data points and the base points
 base_points = imp[0].copy()
 # We will now define the IBL, which represents our water level
-IBL = base_points.min()
+IBL = base_points.min() + (base_points.min() * 0.05)
 # iteration(550)
 # print("total volume: " + str(total_volume))
 
@@ -386,8 +389,12 @@ nOfMinima=[]
 nOfMaxima=[]
 nOfSaddles=[]
 nOfIslands=[]
-nOfIslandsSizes=[]
-nOfVolume=[]
+IslandsTotalArea=[]
+IslandsAverageSizes=[]
+IslandsMedianSizes=[]
+IslandTotalVolume=[]
+IslandAverageVolume=[]
+
 for t in range(50, 661, 10):
     print("iteration: " + str(t))
     iteration(t)
@@ -395,8 +402,13 @@ for t in range(50, 661, 10):
     nOfMaxima.append(np.count_nonzero(is_maximum))
     nOfSaddles.append(np.count_nonzero(horizontal_saddles) + np.count_nonzero(vertical_saddles))
     nOfIslands.append(np.count_nonzero(is_island))
-    nOfIslandsSizes.append(np.mean(island_sizes))
-    nOfVolume.append(total_volume)
+    IslandsTotalArea.append(np.sum(island_sizes))
+    IslandsAverageSizes.append(np.mean(island_sizes))
+    IslandsMedianSizes.append(np.median(island_sizes))
+    IslandTotalVolume.append(np.sum(total_volume))
+    IslandAverageVolume.append(np.mean(total_volume))
+
+np.savez('data_arrays_high_water.npz', nOfMinima=nOfMinima, nOfMaxima=nOfMaxima, nOfSaddles=nOfSaddles, nOfIslands=nOfIslands, IslandsTotalArea=IslandsTotalArea, IslandsAverageSizes=IslandsAverageSizes, IslandsMedianSizes=IslandsMedianSizes, IslandTotalVolume=IslandTotalVolume, IslandAverageVolume=IslandAverageVolume)
 
 x_values = list(range(50, 661, 10))
 ticks = list(range(0, len(x_values)))
@@ -445,13 +457,13 @@ display_ticks = ticks[::tick_spacing]
 # plt.savefig('islandsSizesZoom.png', format='png', dpi=300)
 # plt.clf()
 
-plt.plot(nOfVolume, label='Total volume')
-plt.ylim(bottom=0)
-plt.xticks(ticks = display_ticks,labels=display_x_values)
-plt.title('Total island volume over time')
-plt.xlabel('Time')
-plt.savefig('islandsVolume.png', format='png', dpi=300)
-plt.clf()
+# plt.plot(nOfVolume, label='Total volume')
+# plt.ylim(bottom=0)
+# plt.xticks(ticks = display_ticks,labels=display_x_values)
+# plt.title('Total island volume over time')
+# plt.xlabel('Time')
+# plt.savefig('islandsVolume.png', format='png', dpi=300)
+# plt.clf()
 
 
 
